@@ -1,6 +1,6 @@
 {
   "name": "retry-stream",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A fix to econnresets",
   "main": "index.js",
   "scripts": {
