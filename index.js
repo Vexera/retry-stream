@@ -36,7 +36,7 @@ function setupStream(inputURL, outputStream, reconnectInfo = { trys: 5, download
 	});
 
 	outputStream.destroy = () => {
-		stream._destroyed = true;
+		outputStream._destroyed = true;
 		if(inputStream) {
 			inputStream.unpipe();
 			inputStream.destroy();
