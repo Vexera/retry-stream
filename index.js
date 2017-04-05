@@ -1,5 +1,6 @@
 const stream = require('stream');
 const https = require('https');
+const url = require('url');
 
 function setupStream(inputURL, outputStream, reconnectInfo = { trys: 5, downloaded: 0, total: 0 }) {
 	if(outputStream._destroyed) return;
@@ -7,6 +8,14 @@ function setupStream(inputURL, outputStream, reconnectInfo = { trys: 5, download
 		outputStream.emit('error', new Error('too many reconnects'));
 		return;
 	}
+
+	outputStream.destroy = () => {
+		outputStream._destroyed = true;
+		if(inputStream) {
+			inputStream.unpipe();
+			inputStream.destroy();
+		}
+	};
 
 	let inputStream;
 	https.get(inputURL, res => {
@@ -26,27 +35,27 @@ function setupStream(inputURL, outputStream, reconnectInfo = { trys: 5, download
 				inputStream.unpipe();
 				reconnectInfo.trys -= 1;
 
+				inputURL.headers = { Range: `bytes=${reconnectInfo.downloaded}-` };
+
 				setupStream(inputURL, outputStream, reconnectInfo);
 			} else {
 				outputStream.end();
 			}
 		});
 
-		inputStream.pipe(outputStream);
-	});
+		inputStream.on('error', err => {
+			if(error.toString() === "Error: read ECONNRESET") return;
 
-	outputStream.destroy = () => {
-		outputStream._destroyed = true;
-		if(inputStream) {
-			inputStream.unpipe();
-			inputStream.destroy();
-		}
-	};
+			outputStream.emit('error', err);
+		})
+
+		inputStream.pipe(outputStream, { end : false });
+	});
 }
 
 module.exports = inputURL => {
 	let outputStream = new stream.PassThrough();
-	setupStream(inputURL, outputStream);
+	setupStream(url.parse(inputURL), outputStream);
 
 	return outputStream;
 };
