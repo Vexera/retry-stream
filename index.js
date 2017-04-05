@@ -44,7 +44,8 @@ function setupStream(inputURL, outputStream, reconnectInfo = { trys: 5, download
 		});
 
 		inputStream.on('error', err => {
-			if(error.toString() === "Error: read ECONNRESET") return;
+			if(!error) return;
+			if(error.message === "read ECONNRESET") return;
 
 			outputStream.emit('error', err);
 		})
